@@ -215,12 +215,10 @@ class Generator(nn.Module):
                 'cuda' if torch.cuda.is_available() else 'cpu')
             self.hpf = HighPass(w_hpf, device)
 
-    def forward(self, x, s, masks=None, F0=None):            
+    def forward(self, x, s, F0=None):            
         x = self.stem(x)
         cache = {}
         for block in self.encode:
-            if (masks is not None) and (x.size(2) in [32, 64, 128]):
-                cache[x.size(2)] = x
             x = block(x)
             
         if F0 is not None:
@@ -230,10 +228,6 @@ class Generator(nn.Module):
 
         for block in self.decode:
             x = block(x, s)
-            if (masks is not None) and (x.size(2) in [32, 64, 128]):
-                mask = masks[0] if x.size(2) in [32] else masks[1]
-                mask = F.interpolate(mask, size=x.size(2), mode='bilinear')
-                x = x + self.hpf(mask * cache[x.size(2)])
 
         return self.to_out(x)
 

@@ -40,7 +40,7 @@ def compute_d_loss(nets, args, x_real, y_org, y_trg, z_trg=None, x_ref=None, use
             s_trg = nets.style_encoder(x_ref, y_trg)
             
         F0 = nets.f0_model.get_feature_GAN(x_real)
-        x_fake = nets.generator(x_real, s_trg, masks=None, F0=F0)
+        x_fake = nets.generator(x_real, s_trg, F0=F0)
     out = nets.discriminator(x_fake, y_trg)
     loss_fake = adv_loss(out, 0)
     if use_con_reg:
@@ -89,7 +89,7 @@ def compute_g_loss(nets, args, x_real, y_org, y_trg, z_trgs=None, x_refs=None, u
         ASR_real = nets.asr_model.get_feature(x_real)
     
     # adversarial loss
-    x_fake = nets.generator(x_real, s_trg, masks=None, F0=GAN_F0_real)
+    x_fake = nets.generator(x_real, s_trg, F0=GAN_F0_real)
     out = nets.discriminator(x_fake, y_trg) 
     loss_adv = adv_loss(out, 1)
     
@@ -124,7 +124,7 @@ def compute_g_loss(nets, args, x_real, y_org, y_trg, z_trgs=None, x_refs=None, u
         s_trg2 = nets.mapping_network(z_trg2, y_trg)
     else:
         s_trg2 = nets.style_encoder(x_ref2, y_trg)
-    x_fake2 = nets.generator(x_real, s_trg2, masks=None, F0=GAN_F0_real)
+    x_fake2 = nets.generator(x_real, s_trg2, F0=GAN_F0_real)
     x_fake2 = x_fake2.detach()
     _, GAN_F0_fake2, _ = nets.f0_model(x_fake2)
     loss_ds = torch.mean(torch.abs(x_fake - x_fake2))
@@ -132,7 +132,7 @@ def compute_g_loss(nets, args, x_real, y_org, y_trg, z_trgs=None, x_refs=None, u
     
     # cycle-consistency loss
     s_org = nets.style_encoder(x_real, y_org)
-    x_rec = nets.generator(x_fake, s_org, masks=None, F0=GAN_F0_fake)
+    x_rec = nets.generator(x_fake, s_org, F0=GAN_F0_fake)
     loss_cyc = torch.mean(torch.abs(x_rec - x_real))
     # F0 loss in cycle-consistency loss
     if args.lambda_f0 > 0:

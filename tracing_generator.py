@@ -3,6 +3,7 @@ from models import Generator
 import torch
 import torchaudio
 import librosa
+import coremltools
 import numpy as np
 from Utils.JDC.model import JDCNet
 
@@ -25,11 +26,7 @@ source = preprocess(audio)
 
 ref = torch.zeros([1, 64], dtype=torch.float32)
 
-
-
-
 from typing import Optional , Union
-
 
 # load F0 model
 
@@ -39,17 +36,20 @@ F0_model.load_state_dict(params)
 _ = F0_model.eval()
 
 f0_feat = F0_model.get_feature_GAN(source.unsqueeze(1))
-
-piki = Optional[torch.Tensor]
-piki = None
-#hh = Optional[torch.Tensor]()
-#b: Union[torch.Tensor, None] #= None
-
-
-#scripted_model = torch.jit.script(generator.forward)
-
-example_inputs = [source.unsqueeze(1), ref, _ , f0_feat] # NONEがうまく変換できない。
+example_inputs = [source.unsqueeze(1), ref, f0_feat]
 traced = torch.jit.trace(generator, example_inputs)
-#traced.save("generator.pt")
+traced.save("generator.pt")
+
+#print(source.unsqueeze(1).shape, ref.shape, f0_feat.shape)
+#print(source.unsqueeze(1).dtype, ref.dtype, f0_feat.dtype)
+
+mlmodel = coremltools.converters.convert(
+  traced,
+  inputs=[
+    coremltools.TensorType(shape=(1, 1, 80, 7841), dtype=np.float32),
+    coremltools.TensorType(shape=(1, 64), dtype=np.float32),
+    coremltools.TensorType(shape=(1, 256, 10, 7841), dtype=np.float32)]
+)
+mlmodel.save("generator.mlmodel")
 
         
